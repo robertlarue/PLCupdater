@@ -1,0 +1,15 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="PLCupdater.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="FileA" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">A.txt</Value>
+    </Setting>
+    <Setting Name="FileB" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">B.txt</Value>
+    </Setting>
+    <Setting Name="SerialPort" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">/dev/ttyUSB0</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
