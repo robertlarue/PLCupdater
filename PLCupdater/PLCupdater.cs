@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using System.IO;
 using Raspberry.IO.GeneralPurpose;
 
 namespace PLCupdater
@@ -9,9 +10,11 @@ namespace PLCupdater
     {
         public static Timer timer;
         public static int idleTimeout = 60000;
+        public static System.IO.StreamReader fileReader;
+        public static System.IO.StreamWriter fileWriter;
         static void Main(string[] args)
         {
-            startIdleTimer();
+            timer = new Timer(new TimerCallback(idleShutdown), null, idleTimeout, Timeout.Infinite);
             //create instance of settings object to get settings from config file
             Properties.Settings settings = new Properties.Settings();
 
@@ -106,8 +109,8 @@ namespace PLCupdater
             //try reading the program file using the filename specified
             try
             {
-                //create FileReader to read from file
-                System.IO.StreamReader FileReader = new System.IO.StreamReader(filename);
+                //create fileReader to read from file
+                fileReader = new System.IO.StreamReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,filename));
 
                 //initialize string to hold contents of each line
                 string line = null;
@@ -121,22 +124,22 @@ namespace PLCupdater
                 //the second line is the FileNumber
                 //and the third line is the data
                 //these are converted into a PLCFile and added to the PLCFiles collection
-                while (!(FileReader.EndOfStream))
+                while (!(fileReader.EndOfStream))
                 {
                     //get the contents of the first line
-                    line = FileReader.ReadLine();
+                    line = fileReader.ReadLine();
 
                     //convert hex ascii to byte for FileType
                     PLCFile.FileType = Convert.ToByte(line, 16);
 
                     //get the contents of the second line
-                    line = FileReader.ReadLine();
+                    line = fileReader.ReadLine();
 
                     //convert hex ascii to byte for FileNumber
                     PLCFile.FileNumber = Convert.ToByte(line, 16);
 
                     //get the contents of the third line
-                    line = FileReader.ReadLine();
+                    line = fileReader.ReadLine();
 
                     //clear the data collection
                     data.Clear();
@@ -189,6 +192,7 @@ namespace PLCupdater
 
                 //reset the idle shutdown timer
                 startIdleTimer();
+                fileReader.Close();
                 return;
             }
 
@@ -203,6 +207,7 @@ namespace PLCupdater
 
                 //reset the idle shutdown timer
                 startIdleTimer();
+                if (fileReader != null) { fileReader.Close(); }
                 return;
             }
         }
@@ -228,7 +233,7 @@ namespace PLCupdater
                 PLCFiles = df1.UploadProgramData();
                 try
                 {
-                    System.IO.StreamWriter fileWriter = new System.IO.StreamWriter(filename);
+                    fileWriter = new System.IO.StreamWriter(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,filename));
                     for (int i = 0; i < PLCFiles.Count; i++)
                     {
                         fileWriter.WriteLine(String.Format("{0:x2}", PLCFiles[i].FileType));
@@ -239,7 +244,6 @@ namespace PLCupdater
                         }
                         fileWriter.WriteLine();
                     }
-
                     fileWriter.Close();
                 }
                 catch (Exception ex)
@@ -247,6 +251,7 @@ namespace PLCupdater
                     Console.WriteLine("Could not save PLC file. " + ex.Message);
                     rapidBlink(driver, redLED);
                     startIdleTimer();
+                    if (fileWriter != null) { fileWriter.Close(); }
                     return;
                 }
             }
@@ -289,16 +294,19 @@ namespace PLCupdater
         //set the idle shutdown timer to the idleTimeout value
         static void startIdleTimer()
         {
-            timer = new Timer(new TimerCallback(idleShutdown), null, idleTimeout, Timeout.Infinite);
+            timer.Change(idleTimeout, Timeout.Infinite);
+            Console.WriteLine("Resetting Timer");
         }
 
         //run the idleshutdown.sh script when the idle shutdown timer has elapsed
         static void idleShutdown(object state)
         {
+            Console.WriteLine("Shutting down because system is idle");
             ProcessStartInfo psi = new ProcessStartInfo();
-            psi.FileName = "./idleshutdown.sh";
+            psi.FileName = "sh";
+            psi.Arguments = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "idleshutdown.sh");
             psi.UseShellExecute = false;
-            Process p = Process.Start(psi);
+            Process.Start(psi);
         }
     }
 }
