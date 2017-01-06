@@ -1,12 +1,17 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Threading;
 using Raspberry.IO.GeneralPurpose;
 
 namespace PLCupdater
 {
     class PLCupdater
     {
+        public static Timer timer;
+        public static int idleTimeout = 60000;
         static void Main(string[] args)
         {
+            startIdleTimer();
             //create instance of settings object to get settings from config file
             Properties.Settings settings = new Properties.Settings();
 
@@ -65,7 +70,8 @@ namespace PLCupdater
                         updating = true;
 
                         //start update to transfer program B to the PLC using serial port from the config
-                        DownloadProgram(df1, driver, gpioConnection, redLED, greenLED, settings.FileB, settings.SerialPort);
+                        //DownloadProgram(df1, driver, gpioConnection, redLED, greenLED, settings.FileB, settings.SerialPort);
+                        UploadProgram(df1, driver, gpioConnection, redLED, greenLED, settings.FileA, settings.SerialPort);
 
                         //set updating flag back to false
                         updating = false;
@@ -83,6 +89,7 @@ namespace PLCupdater
         //Downloads program to PLC using specified file name and serial port
         private static void DownloadProgram(DF1Comm.DF1Comm df1, IGpioConnectionDriver driver, GpioConnection gpioConnection, ProcessorPin redLED, OutputPinConfiguration greenLED, string filename, string serialPort)
         {
+            startIdleTimer();
             //turn on red LED while update is in progress
             driver.Write(redLED, true);
 
@@ -167,17 +174,21 @@ namespace PLCupdater
                 {
                     Console.WriteLine(ex.Message);
                     rapidBlink(driver, redLED);
+                    startIdleTimer();
                     return;
                 }
 
                 //turn off red LED when update is complete
                 driver.Write(redLED, false);
 
+                //write a success message to the console if completed without errors
+                Console.WriteLine("Successful Download");
+
                 //turn on green LED for 5 seconds when update is complete
                 gpioConnection.Blink(greenLED, TimeSpan.FromSeconds(5));
 
-                //write a success message to the console if completed without errors
-                Console.WriteLine("Successful Download");
+                //reset the idle shutdown timer
+                startIdleTimer();
                 return;
             }
 
@@ -186,12 +197,86 @@ namespace PLCupdater
             {
                 //write the error to the console if an error occurs reading the program file
                 Console.WriteLine(ex.Message);
+
+                //blink red LED to indicate problem with upload
                 rapidBlink(driver, redLED);
+
+                //reset the idle shutdown timer
+                startIdleTimer();
                 return;
             }
         }
+
+        private static void UploadProgram(DF1Comm.DF1Comm df1, IGpioConnectionDriver driver, GpioConnection gpioConnection, ProcessorPin redLED, OutputPinConfiguration greenLED, string filename, string serialPort)
+        {
+            startIdleTimer();
+            //turn on red LED while update is in progress
+            driver.Write(redLED, true);
+
+            //set serial port on DF1 class to serial port specified, e.g. "/dev/ttyUSB0"
+            df1.ComPort = serialPort;
+
+            //Create new PLCFileDetails object
+            System.Collections.ObjectModel.Collection<DF1Comm.DF1Comm.PLCFileDetails> PLCFiles = new System.Collections.ObjectModel.Collection<DF1Comm.DF1Comm.PLCFileDetails>();
+
+            //byte collection to hold raw data to send to PLC
+            System.Collections.ObjectModel.Collection<byte> data = new System.Collections.ObjectModel.Collection<byte>();
+
+            //try to upload the PLCfiles from the PLC
+            try
+            {
+                PLCFiles = df1.UploadProgramData();
+                try
+                {
+                    System.IO.StreamWriter fileWriter = new System.IO.StreamWriter(filename);
+                    for (int i = 0; i < PLCFiles.Count; i++)
+                    {
+                        fileWriter.WriteLine(String.Format("{0:x2}", PLCFiles[i].FileType));
+                        fileWriter.WriteLine(String.Format("{0:x2}", PLCFiles[i].FileNumber));
+                        for (int j = 0; j < PLCFiles[i].data.Length; j++)
+                        {
+                            fileWriter.Write(String.Format("{0:x2}", PLCFiles[i].data[j]));
+                        }
+                        fileWriter.WriteLine();
+                    }
+
+                    fileWriter.Close();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Could not save PLC file. " + ex.Message);
+                    rapidBlink(driver, redLED);
+                    startIdleTimer();
+                    return;
+                }
+            }
+
+            //write the error to the console if an error occurs uploading the program
+            catch (Exception ex)
+            {
+                Console.WriteLine("Could not upload PLC file. " + ex.Message);
+                rapidBlink(driver, redLED);
+                startIdleTimer();
+                return;
+            }
+
+            //turn off red LED when upload is complete
+            driver.Write(redLED, false);
+
+            //write a success message to the console if completed without errors
+            Console.WriteLine("Successful Upload");
+
+            //turn on green LED for 5 seconds when update is complete
+            gpioConnection.Blink(greenLED, TimeSpan.FromSeconds(5));
+
+            //reset the idle shutdown timer
+            startIdleTimer();
+            return;
+        }
+
         static void rapidBlink(IGpioConnectionDriver driver, ProcessorPin led)
         {
+            //blink the LED for 5 seconds, 4 times per second
             for (int i = 0; i < 20; i++)
             {
                 driver.Write(led, true);
@@ -199,6 +284,21 @@ namespace PLCupdater
                 driver.Write(led, false);
                 System.Threading.Thread.Sleep(125);
             }
+        }
+
+        //set the idle shutdown timer to the idleTimeout value
+        static void startIdleTimer()
+        {
+            timer = new Timer(new TimerCallback(idleShutdown), null, idleTimeout, Timeout.Infinite);
+        }
+
+        //run the idleshutdown.sh script when the idle shutdown timer has elapsed
+        static void idleShutdown(object state)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo();
+            psi.FileName = "./idleshutdown.sh";
+            psi.UseShellExecute = false;
+            Process p = Process.Start(psi);
         }
     }
 }
