@@ -1,2 +1,2 @@
 ﻿#!/bin/bash
-sudo shutdown -h now
+sudo mopicli -wsd 1
