@@ -43,10 +43,22 @@ namespace PLCupdater.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("/dev/ttyUSB0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("/dev/serial0")]
         public string SerialPort {
             get {
                 return ((string)(this["SerialPort"]));
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30000")]
+        public int idleTimeout {
+            get {
+                return ((int)(this["idleTimeout"]));
+            }
+            set {
+                this["idleTimeout"] = value;
             }
         }
     }

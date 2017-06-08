@@ -9,22 +9,27 @@ namespace PLCupdater
     class PLCupdater
     {
         public static Timer timer;
-        public static int idleTimeout = 60000;
+        public static int idleTimeout = 30000;
         public static System.IO.StreamReader fileReader;
         public static System.IO.StreamWriter fileWriter;
         static void Main(string[] args)
         {
-            timer = new Timer(new TimerCallback(idleShutdown), null, idleTimeout, Timeout.Infinite);
             //create instance of settings object to get settings from config file
             Properties.Settings settings = new Properties.Settings();
+
+            //set idleTimout to value from PLCupdater.exe.config file
+            idleTimeout = settings.idleTimeout;
+
+            //Initialize timer to shutdown device when idle
+            timer = new Timer(new TimerCallback(idleShutdown), null, idleTimeout, Timeout.Infinite);
 
             //flag to prevent triggering update while one is already in progress
             bool updating = false;
 
             //pin definitions
 
-            //yellow LED on pin 12, provision as a low-level pin
-            ProcessorPin yellowLED = ConnectorPin.P1Pin12.ToProcessor();
+            //blue LED on pin 12, provision as a low-level pin
+            ProcessorPin blueLED = ConnectorPin.P1Pin12.ToProcessor();
 
             //red LED on pin 18, provision as a low-level pin
             ProcessorPin redLED = ConnectorPin.P1Pin18.ToProcessor();
@@ -32,11 +37,13 @@ namespace PLCupdater
             //green LED on pin 16, provision as a managed output
             OutputPinConfiguration greenLED = ConnectorPin.P1Pin16.Output();
 
-            //create a low-level connection driver for red LED
+            //create a low-level connection driver for red LED and blue LED
             IGpioConnectionDriver driver = GpioConnectionSettings.DefaultDriver;
             driver.Allocate(redLED, PinDirection.Output);
-            driver.Allocate(yellowLED, PinDirection.Output);
-            driver.Write(yellowLED, true);
+            driver.Allocate(blueLED, PinDirection.Output);
+
+            //turn blue LED on to indicate program is ready
+            driver.Write(blueLED, true);
 
             //create instance of DF1 protocol serial connection class
             DF1Comm.DF1Comm df1 = new DF1Comm.DF1Comm();
