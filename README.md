@@ -39,7 +39,7 @@ The most important components are a Raspberry Pi and a TTL to RS-232 adapter.
 Below is how I wired up my prototype. I used the MoPi circuit to handle power management and graceful shutdown.
 The table is layed out with the Raspberry Pi pinout down the center and the connections to other devices on each side.
 
-![Raspberry Pi Pinout](/Hardware/PLCupdaterRpiPinout.svg?raw=true)
+![Raspberry Pi Pinout](https://rawgit.com/robertlarue/PLCupdater/master/Hardware/PLCupdaterRpiPinout.svg)
 
 | Func               | BCM | wPi | Name   | Mode | Phys | Phys | Mode | Name   | wPi | BCM | Func                |
 |--------------------|-----|-----|--------|------|------|------|------|--------|-----|-----|---------------------|
@@ -53,7 +53,7 @@ The table is layed out with the Raspberry Pi pinout down the center and the conn
 | A Down             | 22  | 3   | GPIO 3 | IN   | 15   | 16   | OUT  | GPIO 4 | 4   | 23  | Success (Green LED) |
 | Power (Yellow LED) |     |     | 3.3V   |      | 17   | 18   | OUT  | GPIO 5 | 5   | 24  | Progress (Red LED)  |
 
-![PLCupdater Wiring](/Hardware/PLCupdaterWiring.svg?raw=true)
+![PLCupdater Wiring](https://rawgit.com/robertlarue/PLCupdater/master/Hardware/PLCupdaterWiring.svg?raw=true)
 
 ![PLCupdater LED Resistors](/Hardware/PLCupdaterLEDResistors.png?raw=true)
 
