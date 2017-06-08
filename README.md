@@ -1,6 +1,6 @@
 ﻿# PLCupdater
 A portable programming tool for Allen Bradley MicroLogix PLCs. Software and instruction on building the hardware are included.
-Credits to Archie over at sourceforge for the Allen Bradley [DF1 Protocol library](https://sourceforge.net/projects/abdf1/) which I used as a starting place for this project.
+Credits to Archie over at sourceforge for the Allen Bradley [DF1 Protocol library](https://sourceforge.net/projects/abdf1/) which I used as a starting place for this project. I forked his library to work with the Raspberry Pi and the modified version can be found in the [DF1Comm repo](https://github.com/robertlarue/DF1Comm)
 
 ## Features
 * Upload program from PLC to handheld device and store in one of two memory slots.
@@ -12,9 +12,11 @@ You will need a network connection to your Raspberry Pi Zero before you can inst
 There are many ways of doing this. I set up mine to tunnel ethernet over usb and then share my laptop's connection.
 An easier way would be to get a [micro USB to ethernet adapter](https://www.amazon.com/Plugable-Micro-B-Ethernet-Raspberry-AX88772A/dp/B00RM3KXAU)
 Rasbian Jesse or greater is required and you have to install mono beforehand.
+
 `sudo apt-get install mono-complete`
 
 Then clone this repository 
+
 `git clone https://github.com/robertlarue/PLCupdater.git `
 
 # Hardware
